@@ -23,7 +23,6 @@
             background-color: #fff;
             min-height: 100vh;
         }
-        /* 头部 */
         .header {
             text-align: center;
             padding: 30px 0 20px;
@@ -41,7 +40,6 @@
             color: #999;
             margin-top: 6px;
         }
-        /* 分类网格 */
         .category-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -72,7 +70,6 @@
             font-weight: 500;
             color: #2c3e50;
         }
-        /* 文章列表 */
         .back-btn {
             display: inline-block;
             padding: 8px 16px;
@@ -127,7 +124,6 @@
             padding: 60px 0;
             font-size: 15px;
         }
-        /* 管理入口 */
         .admin-entry {
             text-align: center;
             margin-top: 30px;
@@ -140,7 +136,6 @@
         .admin-entry:active {
             color: #999;
         }
-        /* 管理面板 */
         .admin-panel {
             position: fixed;
             top: 0;
@@ -191,6 +186,7 @@
             gap: 8px;
             margin-bottom: 15px;
             flex-wrap: wrap;
+            align-items: center;
         }
         .input-group input {
             flex: 1;
@@ -303,6 +299,24 @@
             color: #999;
             margin-top: 10px;
         }
+        /* 新增：获取标题按钮样式 */
+        .fetch-title-btn {
+            padding: 10px 14px;
+            background: #f0f0f0;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            font-size: 15px;
+            cursor: pointer;
+            white-space: nowrap;
+            color: #555;
+        }
+        .fetch-title-btn:active {
+            background: #e0e0e0;
+        }
+        .fetch-title-btn.loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
     </style>
 </head>
 <body>
@@ -343,8 +357,9 @@
         <div class="admin-section" id="articleAdminSection" style="display: none;">
             <h4>📄 管理【<span id="adminCurrentCat"></span>】的文章</h4>
             <div class="input-group">
-                <input type="text" id="newArticleTitle" placeholder="文章标题">
+                <input type="text" id="newArticleTitle" placeholder="文章标题（自动获取或手动输入）">
                 <input type="url" id="newArticleUrl" placeholder="公众号链接 https://...">
+                <button class="fetch-title-btn" id="fetchTitleBtn" title="手动获取标题">🔍</button>
                 <button class="btn" id="addArticleBtn">添加</button>
             </div>
             <ul class="article-admin-list" id="adminArticleList"></ul>
@@ -365,12 +380,12 @@
     <script>
         (function() {
             // 默认管理密码 (可自行修改)
-            const ADMIN_PASSWORD = 'dragonyang27';
+            const ADMIN_PASSWORD = 'admin123';
             
             // 数据存储键名
             const STORAGE_KEY = 'wx_article_index_data';
             
-            // 初始示例数据
+            // 默认示例数据
             const DEFAULT_DATA = {
                 categories: [
                     {
@@ -391,17 +406,13 @@
                 ]
             };
 
-            // 当前状态
             let appData = { categories: [] };
-            let currentViewCategoryId = null;  // 当前正在管理文章的分类ID
-            let selectedAdminCategoryId = null; // 管理面板中选中的分类
+            let selectedAdminCategoryId = null;
 
-            // 工具函数：生成简单ID
             function generateId() {
                 return Date.now().toString(36) + Math.random().toString(36).substr(2, 6);
             }
 
-            // 从localStorage加载数据
             function loadData() {
                 const stored = localStorage.getItem(STORAGE_KEY);
                 if (stored) {
@@ -415,18 +426,10 @@
                 }
             }
 
-            // 保存数据到localStorage
             function saveData() {
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
             }
 
-            // 重置为默认数据（调试用，可调用）
-            function resetToDefault() {
-                appData = JSON.parse(JSON.stringify(DEFAULT_DATA));
-                saveData();
-            }
-
-            // 渲染分类卡片
             function renderCategories() {
                 const grid = document.getElementById('categoryGrid');
                 if (!grid) return;
@@ -435,7 +438,6 @@
                     return;
                 }
                 grid.innerHTML = appData.categories.map(cat => {
-                    const icon = cat.name.length > 0 ? cat.name.charAt(0) : '📌';
                     return `
                         <div class="category-card" data-cat-id="${cat.id}">
                             <div class="icon">${getRandomIcon(cat.id)}</div>
@@ -444,7 +446,6 @@
                     `;
                 }).join('');
                 
-                // 绑定点击事件
                 document.querySelectorAll('.category-card').forEach(card => {
                     card.addEventListener('click', function() {
                         const catId = this.getAttribute('data-cat-id');
@@ -468,7 +469,6 @@
                 return div.innerHTML;
             }
 
-            // 显示文章列表
             function showArticles(catId) {
                 const category = appData.categories.find(c => c.id === catId);
                 if (!category) return;
@@ -493,19 +493,15 @@
                             </a>
                         </li>
                     `).join('');
-                    
-                    // 为每个链接添加点击监听（防止微信内跳转问题，直接允许）
                 }
             }
 
-            // 返回分类列表
             function backToCategories() {
                 document.getElementById('view-articles').style.display = 'none';
                 document.getElementById('view-categories').style.display = 'block';
-                renderCategories(); // 刷新可能的数据
+                renderCategories();
             }
 
-            // 管理面板：渲染分类列表
             function renderAdminCategories() {
                 const list = document.getElementById('adminCategoryList');
                 if (appData.categories.length === 0) {
@@ -522,7 +518,6 @@
                     `).join('');
                 }
                 
-                // 绑定事件
                 document.querySelectorAll('[data-manage-cat]').forEach(btn => {
                     btn.addEventListener('click', function(e) {
                         e.stopPropagation();
@@ -539,7 +534,6 @@
                             saveData();
                             renderAdminCategories();
                             renderCategories();
-                            // 如果当前正在管理该分类的文章，返回列表
                             if (selectedAdminCategoryId === catId) {
                                 backToCategorySelection();
                             }
@@ -548,14 +542,12 @@
                 });
             }
 
-            // 进入文章管理界面
             function openArticleManager(catId) {
                 const category = appData.categories.find(c => c.id === catId);
                 if (!category) return;
                 selectedAdminCategoryId = catId;
                 document.getElementById('adminCurrentCat').textContent = category.name;
                 document.getElementById('articleAdminSection').style.display = 'block';
-                // 隐藏分类管理区域？保留，但用户可看到上方分类管理，我们也可以做切换。为清晰，隐藏分类列表部分不太合适，设计为两个区域上下排列。保持可见。
                 renderAdminArticles();
             }
 
@@ -589,7 +581,7 @@
                                 cat.articles = cat.articles.filter(a => a.id !== articleId);
                                 saveData();
                                 renderAdminArticles();
-                                renderAdminCategories(); // 更新文章计数
+                                renderAdminCategories();
                                 renderCategories();
                             }
                         }
@@ -597,7 +589,6 @@
                 });
             }
 
-            // 添加分类
             function addCategory() {
                 const input = document.getElementById('newCategoryName');
                 const name = input.value.trim();
@@ -616,7 +607,85 @@
                 renderCategories();
             }
 
-            // 添加文章
+            // ========== 新增：自动获取标题功能 ==========
+            async function fetchTitle(url) {
+                // 使用两个备用的CORS代理，提高成功率
+                const proxies = [
+                    `https://corsproxy.io/?${encodeURIComponent(url)}`,
+                    `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`
+                ];
+                
+                for (let proxy of proxies) {
+                    try {
+                        const response = await fetch(proxy);
+                        if (!response.ok) continue;
+                        const html = await response.text();
+                        // 提取<title>标签内容
+                        const match = html.match(/<\s*title\s*>(.*?)<\s*\/\s*title\s*>/i);
+                        if (match && match[1]) {
+                            return match[1].trim();
+                        }
+                    } catch (e) {
+                        continue; // 尝试下一个代理
+                    }
+                }
+                return null; // 所有代理均失败
+            }
+
+            async function autoFetchTitle() {
+                const urlInput = document.getElementById('newArticleUrl');
+                const titleInput = document.getElementById('newArticleTitle');
+                const fetchBtn = document.getElementById('fetchTitleBtn');
+                const url = urlInput.value.trim();
+                
+                if (!url || (!url.startsWith('http://') && !url.startsWith('https://'))) {
+                    return;
+                }
+                
+                // 显示加载状态
+                fetchBtn.classList.add('loading');
+                fetchBtn.textContent = '⏳';
+                
+                try {
+                    const title = await fetchTitle(url);
+                    if (title) {
+                        titleInput.value = title;
+                        // 选中标题文字，方便用户直接修改
+                        titleInput.select();
+                    }
+                } catch (error) {
+                    // 静默失败
+                } finally {
+                    fetchBtn.classList.remove('loading');
+                    fetchBtn.textContent = '🔍';
+                }
+            }
+
+            function setupAutoFetch() {
+                const urlInput = document.getElementById('newArticleUrl');
+                const fetchBtn = document.getElementById('fetchTitleBtn');
+                
+                // 当链接框失去焦点时自动获取
+                urlInput.addEventListener('blur', () => {
+                    // 避免与手动点击按钮重复触发
+                    autoFetchTitle();
+                });
+                
+                // 手动点击按钮获取
+                fetchBtn.addEventListener('click', () => {
+                    autoFetchTitle();
+                });
+                
+                // 回车也能触发获取（可选）
+                urlInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        autoFetchTitle();
+                    }
+                });
+            }
+            // ========== 新增结束 ==========
+
             function addArticle() {
                 if (!selectedAdminCategoryId) {
                     alert('请先在分类列表中点击“管理文章”选择一个分类');
@@ -631,7 +700,6 @@
                     alert('请填写文章标题和链接');
                     return;
                 }
-                // 简单校验链接格式
                 if (!url.startsWith('http://') && !url.startsWith('https://')) {
                     alert('链接需要以 http:// 或 https:// 开头');
                     return;
@@ -653,7 +721,6 @@
                 }
             }
 
-            // 密码验证
             function checkPassword() {
                 const pwd = document.getElementById('passwordInput').value;
                 if (pwd === ADMIN_PASSWORD) {
@@ -669,15 +736,16 @@
             function openAdminPanel() {
                 document.getElementById('adminPanel').classList.add('active');
                 renderAdminCategories();
-                backToCategorySelection(); // 重置文章管理区
+                backToCategorySelection();
+                // 初始化自动获取标题的事件
+                setupAutoFetch();
             }
 
             function closeAdminPanel() {
                 document.getElementById('adminPanel').classList.remove('active');
-                renderCategories(); // 返回时刷新主页面
+                renderCategories();
             }
 
-            // 事件绑定
             function bindEvents() {
                 document.getElementById('backToCategories').addEventListener('click', backToCategories);
                 
@@ -691,7 +759,6 @@
                     if (e.key === 'Enter') checkPassword();
                 });
                 
-                // 点击模态框背景关闭
                 document.getElementById('passwordModal').addEventListener('click', function(e) {
                     if (e.target === this) {
                         this.classList.remove('active');
@@ -708,13 +775,9 @@
                 });
                 
                 document.getElementById('addArticleBtn').addEventListener('click', addArticle);
-                document.getElementById('newArticleUrl').addEventListener('keypress', function(e) {
-                    if (e.key === 'Enter') addArticle();
-                });
                 
                 document.getElementById('backToCatList').addEventListener('click', backToCategorySelection);
                 
-                // 允许在密码弹窗按ESC关闭（简单处理）
                 document.addEventListener('keydown', function(e) {
                     if (e.key === 'Escape') {
                         if (document.getElementById('passwordModal').classList.contains('active')) {
@@ -726,7 +789,6 @@
                 });
             }
 
-            // 初始化
             function init() {
                 loadData();
                 renderCategories();
