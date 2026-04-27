@@ -40,6 +40,7 @@
             color: #999;
             margin-top: 6px;
         }
+        /* 分类网格（适用于一级和二级分类） */
         .category-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -123,6 +124,7 @@
             color: #aaa;
             padding: 60px 0;
             font-size: 15px;
+            grid-column: span 2;
         }
         .admin-entry {
             text-align: center;
@@ -136,6 +138,7 @@
         .admin-entry:active {
             color: #999;
         }
+        /* 管理面板 */
         .admin-panel {
             position: fixed;
             top: 0;
@@ -186,7 +189,6 @@
             gap: 8px;
             margin-bottom: 15px;
             flex-wrap: wrap;
-            align-items: center;
         }
         .input-group input {
             flex: 1;
@@ -226,11 +228,11 @@
             background: #ee5a5a;
             border: 1px solid #ee5a5a;
         }
-        .category-list, .article-admin-list {
+        .admin-item-list {
             list-style: none;
             margin-top: 10px;
         }
-        .category-list li, .article-admin-list li {
+        .admin-item-list li {
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -239,6 +241,8 @@
             border-radius: 8px;
             margin-bottom: 8px;
             font-size: 15px;
+            flex-wrap: wrap;
+            gap: 8px;
         }
         .admin-badge {
             font-size: 12px;
@@ -299,42 +303,32 @@
             color: #999;
             margin-top: 10px;
         }
-        /* 新增：获取标题按钮样式 */
-        .fetch-title-btn {
-            padding: 10px 14px;
-            background: #f0f0f0;
-            border: 1px solid #ddd;
-            border-radius: 10px;
-            font-size: 15px;
-            cursor: pointer;
-            white-space: nowrap;
-            color: #555;
-        }
-        .fetch-title-btn:active {
-            background: #e0e0e0;
-        }
-        .fetch-title-btn.loading {
-            opacity: 0.6;
-            pointer-events: none;
-        }
     </style>
 </head>
 <body>
     <div class="container" id="app">
-        <!-- 主视图：分类列表 -->
+        <!-- 主视图：一级分类列表 -->
         <div id="view-categories">
             <div class="header">
                 <h1>📚 文章索引</h1>
-                <p>点击分类浏览往期内容</p>
+                <p>点击大分类浏览子分类</p>
             </div>
-            <div class="category-grid" id="categoryGrid"></div>
+            <div class="category-grid" id="mainCategoryGrid"></div>
             <div class="admin-entry" id="openAdminBtn">⚙️ 管理</div>
         </div>
 
-        <!-- 文章列表视图（隐藏） -->
+        <!-- 二级分类视图 -->
+        <div id="view-subcategories" style="display: none;">
+            <button class="back-btn" id="backToMainCategories">← 返回大分类</button>
+            <div class="category-title" id="currentMainCategoryName"></div>
+            <div class="category-grid" id="subCategoryGrid"></div>
+            <div class="empty-tip" id="emptySubCategories" style="display: none; grid-column: span 2;">该分类下暂无子分类</div>
+        </div>
+
+        <!-- 文章列表视图 -->
         <div id="view-articles" style="display: none;">
-            <button class="back-btn" id="backToCategories">← 返回分类</button>
-            <div class="category-title" id="currentCategoryName"></div>
+            <button class="back-btn" id="backToSubCategories">← 返回子分类</button>
+            <div class="category-title" id="currentSubCategoryName"></div>
             <ul class="article-list" id="articleList"></ul>
             <div class="empty-tip" id="emptyArticles" style="display: none;">暂无文章</div>
         </div>
@@ -346,24 +340,42 @@
             <h3>📝 内容管理</h3>
             <span class="close-admin" id="closeAdminBtn">✕</span>
         </div>
-        <div class="admin-section">
-            <h4>📁 分类管理</h4>
+
+        <!-- 一级分类管理 -->
+        <div class="admin-section" id="mainCatSection">
+            <h4>📁 大分类管理</h4>
             <div class="input-group">
-                <input type="text" id="newCategoryName" placeholder="输入分类名称">
-                <button class="btn" id="addCategoryBtn">添加分类</button>
+                <input type="text" id="newMainCategoryName" placeholder="输入大分类名称">
+                <button class="btn" id="addMainCategoryBtn">添加</button>
             </div>
-            <ul class="category-list" id="adminCategoryList"></ul>
+            <ul class="admin-item-list" id="adminMainCategoryList"></ul>
         </div>
-        <div class="admin-section" id="articleAdminSection" style="display: none;">
-            <h4>📄 管理【<span id="adminCurrentCat"></span>】的文章</h4>
-            <div class="input-group">
-                <input type="text" id="newArticleTitle" placeholder="文章标题（自动获取或手动输入）">
-                <input type="url" id="newArticleUrl" placeholder="公众号链接 https://...">
-                <button class="fetch-title-btn" id="fetchTitleBtn" title="手动获取标题">🔍</button>
-                <button class="btn" id="addArticleBtn">添加</button>
+
+        <!-- 二级分类管理区域，默认隐藏，选择大分类后显示 -->
+        <div class="admin-section" id="subCatSection" style="display: none;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <h4>📂 管理【<span id="adminCurrentMainCat"></span>】的子分类</h4>
+                <button class="btn btn-outline" id="backToMainCatList">← 选择其他</button>
             </div>
-            <ul class="article-admin-list" id="adminArticleList"></ul>
-            <button class="btn btn-outline" id="backToCatList" style="margin-top:10px;">← 选择其他分类</button>
+            <div class="input-group">
+                <input type="text" id="newSubCategoryName" placeholder="输入子分类名称">
+                <button class="btn" id="addSubCategoryBtn">添加子分类</button>
+            </div>
+            <ul class="admin-item-list" id="adminSubCategoryList"></ul>
+        </div>
+
+        <!-- 文章管理区域，默认隐藏，选择子分类后显示 -->
+        <div class="admin-section" id="articleAdminSection" style="display: none;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <h4>📄 管理【<span id="adminCurrentSubCat"></span>】的文章</h4>
+                <button class="btn btn-outline" id="backToSubCatList">← 选择其他</button>
+            </div>
+            <div class="input-group">
+                <input type="text" id="newArticleTitle" placeholder="文章标题">
+                <input type="url" id="newArticleUrl" placeholder="公众号链接 https://...">
+                <button class="btn" id="addArticleBtn">添加文章</button>
+            </div>
+            <ul class="admin-item-list" id="adminArticleList"></ul>
         </div>
     </div>
 
@@ -379,35 +391,56 @@
 
     <script>
         (function() {
-            // 默认管理密码 (可自行修改)
             const ADMIN_PASSWORD = 'admin123';
-            
-            // 数据存储键名
-            const STORAGE_KEY = 'wx_article_index_data';
-            
-            // 默认示例数据
+            const STORAGE_KEY = 'wx_article_index_data_v2';
+
+            // 默认示例数据（两层分类）
             const DEFAULT_DATA = {
-                categories: [
+                mainCategories: [
                     {
-                        id: '1',
+                        id: 'mc1',
                         name: '运营干货',
-                        articles: [
-                            { id: 'a1', title: '新手公众号排版指南', url: 'https://mp.weixin.qq.com/s/example1' },
-                            { id: 'a2', title: '如何写出爆款标题', url: 'https://mp.weixin.qq.com/s/example2' }
+                        subCategories: [
+                            {
+                                id: 'sc1',
+                                name: '排版技巧',
+                                articles: [
+                                    { id: 'a1', title: '新手公众号排版指南', url: 'https://mp.weixin.qq.com/s/example1' },
+                                    { id: 'a2', title: '配图选择全攻略', url: 'https://mp.weixin.qq.com/s/example2' }
+                                ]
+                            },
+                            {
+                                id: 'sc2',
+                                name: '涨粉方法',
+                                articles: [
+                                    { id: 'a3', title: '如何策划一场裂变活动', url: 'https://mp.weixin.qq.com/s/example3' }
+                                ]
+                            }
                         ]
                     },
                     {
-                        id: '2',
+                        id: 'mc2',
                         name: '产品动态',
-                        articles: [
-                            { id: 'b1', title: '新版本功能介绍', url: 'https://mp.weixin.qq.com/s/example3' }
+                        subCategories: [
+                            {
+                                id: 'sc3',
+                                name: '版本更新',
+                                articles: [
+                                    { id: 'a4', title: 'v2.0 重磅发布', url: 'https://mp.weixin.qq.com/s/example4' }
+                                ]
+                            }
                         ]
                     }
                 ]
             };
 
-            let appData = { categories: [] };
-            let selectedAdminCategoryId = null;
+            let appData = { mainCategories: [] };
+
+            // 当前导航状态
+            let currentMainCategoryId = null;   // 当前查看的一级分类ID
+            let currentSubCategoryId = null;    // 当前查看的二级分类ID
+            let adminSelectedMainId = null;     // 管理面板当前选中的一级分类
+            let adminSelectedSubId = null;      // 管理面板当前选中的二级分类
 
             function generateId() {
                 return Date.now().toString(36) + Math.random().toString(36).substr(2, 6);
@@ -430,62 +463,91 @@
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
             }
 
-            function renderCategories() {
-                const grid = document.getElementById('categoryGrid');
-                if (!grid) return;
-                if (appData.categories.length === 0) {
-                    grid.innerHTML = `<div class="empty-tip" style="grid-column: span 2;">暂无分类，请点击底部“管理”添加</div>`;
-                    return;
-                }
-                grid.innerHTML = appData.categories.map(cat => {
-                    return `
-                        <div class="category-card" data-cat-id="${cat.id}">
-                            <div class="icon">${getRandomIcon(cat.id)}</div>
-                            <div class="name">${escapeHtml(cat.name)}</div>
-                        </div>
-                    `;
-                }).join('');
-                
-                document.querySelectorAll('.category-card').forEach(card => {
-                    card.addEventListener('click', function() {
-                        const catId = this.getAttribute('data-cat-id');
-                        showArticles(catId);
-                    });
-                });
-            }
-
-            function getRandomIcon(seed) {
-                const icons = ['📁', '📂', '📌', '📎', '🔖', '📋', '📝', '✨', '💡', '🔍'];
-                let hash = 0;
-                for (let i = 0; i < seed.length; i++) {
-                    hash = seed.charCodeAt(i) + ((hash << 5) - hash);
-                }
-                return icons[Math.abs(hash) % icons.length];
-            }
-
             function escapeHtml(text) {
                 const div = document.createElement('div');
                 div.textContent = text;
                 return div.innerHTML;
             }
 
-            function showArticles(catId) {
-                const category = appData.categories.find(c => c.id === catId);
-                if (!category) return;
-                
+            // ========== 前端显示渲染 ==========
+            function renderMainCategories() {
+                const grid = document.getElementById('mainCategoryGrid');
+                if (appData.mainCategories.length === 0) {
+                    grid.innerHTML = `<div class="empty-tip">暂无大分类，请点击底部“管理”添加</div>`;
+                    return;
+                }
+                grid.innerHTML = appData.mainCategories.map(mc => `
+                    <div class="category-card" data-main-id="${mc.id}">
+                        <div class="icon">📖</div>
+                        <div class="name">${escapeHtml(mc.name)}</div>
+                    </div>
+                `).join('');
+
+                document.querySelectorAll('#mainCategoryGrid .category-card').forEach(card => {
+                    card.addEventListener('click', function() {
+                        const mainId = this.getAttribute('data-main-id');
+                        showSubCategories(mainId);
+                    });
+                });
+            }
+
+            function showSubCategories(mainId) {
+                const mainCat = appData.mainCategories.find(m => m.id === mainId);
+                if (!mainCat) return;
+                currentMainCategoryId = mainId;
                 document.getElementById('view-categories').style.display = 'none';
-                document.getElementById('view-articles').style.display = 'block';
-                document.getElementById('currentCategoryName').textContent = category.name;
-                
-                const list = document.getElementById('articleList');
-                const emptyTip = document.getElementById('emptyArticles');
-                
-                if (category.articles.length === 0) {
-                    list.innerHTML = '';
+                document.getElementById('view-subcategories').style.display = 'block';
+                document.getElementById('currentMainCategoryName').textContent = mainCat.name;
+
+                const grid = document.getElementById('subCategoryGrid');
+                const emptyTip = document.getElementById('emptySubCategories');
+                if (mainCat.subCategories.length === 0) {
+                    grid.innerHTML = '';
                     emptyTip.style.display = 'block';
                 } else {
                     emptyTip.style.display = 'none';
-                    list.innerHTML = category.articles.map(article => `
+                    grid.innerHTML = mainCat.subCategories.map(sub => `
+                        <div class="category-card" data-sub-id="${sub.id}">
+                            <div class="icon">📖</div>
+                            <div class="name">${escapeHtml(sub.name)}</div>
+                        </div>
+                    `).join('');
+
+                    document.querySelectorAll('#subCategoryGrid .category-card').forEach(card => {
+                        card.addEventListener('click', function() {
+                            const subId = this.getAttribute('data-sub-id');
+                            showArticles(subId);
+                        });
+                    });
+                }
+            }
+
+            function showArticles(subId) {
+                // 查找该子分类及其所属一级分类
+                let foundSub = null;
+                for (let main of appData.mainCategories) {
+                    const sub = main.subCategories.find(s => s.id === subId);
+                    if (sub) {
+                        foundSub = sub;
+                        currentMainCategoryId = main.id;
+                        break;
+                    }
+                }
+                if (!foundSub) return;
+                currentSubCategoryId = subId;
+
+                document.getElementById('view-subcategories').style.display = 'none';
+                document.getElementById('view-articles').style.display = 'block';
+                document.getElementById('currentSubCategoryName').textContent = foundSub.name;
+
+                const list = document.getElementById('articleList');
+                const empty = document.getElementById('emptyArticles');
+                if (foundSub.articles.length === 0) {
+                    list.innerHTML = '';
+                    empty.style.display = 'block';
+                } else {
+                    empty.style.display = 'none';
+                    list.innerHTML = foundSub.articles.map(article => `
                         <li class="article-item">
                             <a href="${escapeHtml(article.url)}" target="_blank" rel="noopener">
                                 <span>${escapeHtml(article.title)}</span>
@@ -496,76 +558,158 @@
                 }
             }
 
-            function backToCategories() {
+            function backToMainCategories() {
+                document.getElementById('view-subcategories').style.display = 'none';
                 document.getElementById('view-articles').style.display = 'none';
                 document.getElementById('view-categories').style.display = 'block';
-                renderCategories();
+                currentMainCategoryId = null;
+                currentSubCategoryId = null;
+                renderMainCategories();
             }
 
-            function renderAdminCategories() {
-                const list = document.getElementById('adminCategoryList');
-                if (appData.categories.length === 0) {
-                    list.innerHTML = '<li style="color:#999; justify-content:center;">暂无分类</li>';
+            function backToSubCategories() {
+                if (!currentMainCategoryId) {
+                    backToMainCategories();
+                    return;
+                }
+                document.getElementById('view-articles').style.display = 'none';
+                document.getElementById('view-subcategories').style.display = 'block';
+                currentSubCategoryId = null;
+                showSubCategories(currentMainCategoryId);
+            }
+
+            // ========== 管理面板渲染 ==========
+            function renderAdminMainCategories() {
+                const list = document.getElementById('adminMainCategoryList');
+                if (appData.mainCategories.length === 0) {
+                    list.innerHTML = '<li style="color:#999; justify-content:center;">暂无大分类</li>';
                 } else {
-                    list.innerHTML = appData.categories.map(cat => `
+                    list.innerHTML = appData.mainCategories.map(mc => `
                         <li>
-                            <span>${escapeHtml(cat.name)} <span class="admin-badge">${cat.articles.length}篇</span></span>
+                            <span>${escapeHtml(mc.name)} <span class="admin-badge">${mc.subCategories.length}个子分类</span></span>
                             <div class="flex-row">
-                                <button class="small-btn" data-manage-cat="${cat.id}">管理文章</button>
-                                <button class="small-btn danger" data-delete-cat="${cat.id}">删除</button>
+                                <button class="small-btn" data-manage-main="${mc.id}">管理子分类</button>
+                                <button class="small-btn danger" data-delete-main="${mc.id}">删除</button>
                             </div>
                         </li>
                     `).join('');
                 }
-                
-                document.querySelectorAll('[data-manage-cat]').forEach(btn => {
-                    btn.addEventListener('click', function(e) {
-                        e.stopPropagation();
-                        const catId = this.getAttribute('data-manage-cat');
-                        openArticleManager(catId);
+
+                document.querySelectorAll('[data-manage-main]').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const mainId = this.getAttribute('data-manage-main');
+                        openSubCategoryManager(mainId);
                     });
                 });
-                document.querySelectorAll('[data-delete-cat]').forEach(btn => {
-                    btn.addEventListener('click', function(e) {
-                        e.stopPropagation();
-                        const catId = this.getAttribute('data-delete-cat');
-                        if (confirm('确定删除该分类及其所有文章吗？')) {
-                            appData.categories = appData.categories.filter(c => c.id !== catId);
+                document.querySelectorAll('[data-delete-main]').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const mainId = this.getAttribute('data-delete-main');
+                        if (confirm('确定删除该大分类及其所有子分类和文章吗？')) {
+                            appData.mainCategories = appData.mainCategories.filter(m => m.id !== mainId);
                             saveData();
-                            renderAdminCategories();
-                            renderCategories();
-                            if (selectedAdminCategoryId === catId) {
-                                backToCategorySelection();
+                            renderAdminMainCategories();
+                            renderMainCategories();
+                            if (adminSelectedMainId === mainId) {
+                                exitSubManager();
                             }
                         }
                     });
                 });
             }
 
-            function openArticleManager(catId) {
-                const category = appData.categories.find(c => c.id === catId);
-                if (!category) return;
-                selectedAdminCategoryId = catId;
-                document.getElementById('adminCurrentCat').textContent = category.name;
+            function openSubCategoryManager(mainId) {
+                const mainCat = appData.mainCategories.find(m => m.id === mainId);
+                if (!mainCat) return;
+                adminSelectedMainId = mainId;
+                document.getElementById('adminCurrentMainCat').textContent = mainCat.name;
+                document.getElementById('subCatSection').style.display = 'block';
+                document.getElementById('articleAdminSection').style.display = 'none';
+                renderAdminSubCategories();
+            }
+
+            function exitSubManager() {
+                adminSelectedMainId = null;
+                adminSelectedSubId = null;
+                document.getElementById('subCatSection').style.display = 'none';
+                document.getElementById('articleAdminSection').style.display = 'none';
+            }
+
+            function renderAdminSubCategories() {
+                if (!adminSelectedMainId) return;
+                const mainCat = appData.mainCategories.find(m => m.id === adminSelectedMainId);
+                if (!mainCat) return;
+                const list = document.getElementById('adminSubCategoryList');
+                if (mainCat.subCategories.length === 0) {
+                    list.innerHTML = '<li style="color:#999; justify-content:center;">暂无子分类</li>';
+                } else {
+                    list.innerHTML = mainCat.subCategories.map(sub => `
+                        <li>
+                            <span>${escapeHtml(sub.name)} <span class="admin-badge">${sub.articles.length}篇</span></span>
+                            <div class="flex-row">
+                                <button class="small-btn" data-manage-sub="${sub.id}">管理文章</button>
+                                <button class="small-btn danger" data-delete-sub="${sub.id}">删除</button>
+                            </div>
+                        </li>
+                    `).join('');
+                }
+
+                document.querySelectorAll('[data-manage-sub]').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const subId = this.getAttribute('data-manage-sub');
+                        openArticleManager(subId);
+                    });
+                });
+                document.querySelectorAll('[data-delete-sub]').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const subId = this.getAttribute('data-delete-sub');
+                        if (confirm('确定删除该子分类及其所有文章吗？')) {
+                            const main = appData.mainCategories.find(m => m.id === adminSelectedMainId);
+                            if (main) {
+                                main.subCategories = main.subCategories.filter(s => s.id !== subId);
+                                saveData();
+                                renderAdminSubCategories();
+                                renderAdminMainCategories();
+                                renderMainCategories();
+                                if (adminSelectedSubId === subId) {
+                                    exitArticleManager();
+                                }
+                            }
+                        }
+                    });
+                });
+            }
+
+            function openArticleManager(subId) {
+                if (!adminSelectedMainId) return;
+                const mainCat = appData.mainCategories.find(m => m.id === adminSelectedMainId);
+                if (!mainCat) return;
+                const sub = mainCat.subCategories.find(s => s.id === subId);
+                if (!sub) return;
+                adminSelectedSubId = subId;
+                document.getElementById('adminCurrentSubCat').textContent = sub.name;
                 document.getElementById('articleAdminSection').style.display = 'block';
                 renderAdminArticles();
             }
 
-            function backToCategorySelection() {
-                selectedAdminCategoryId = null;
+            function exitArticleManager() {
+                adminSelectedSubId = null;
                 document.getElementById('articleAdminSection').style.display = 'none';
-                document.getElementById('adminCurrentCat').textContent = '';
+                // 刷新子分类列表的文章计数
+                renderAdminSubCategories();
+                renderAdminMainCategories();
             }
 
             function renderAdminArticles() {
-                if (!selectedAdminCategoryId) return;
-                const category = appData.categories.find(c => c.id === selectedAdminCategoryId);
-                if (!category) return;
+                if (!adminSelectedMainId || !adminSelectedSubId) return;
+                const mainCat = appData.mainCategories.find(m => m.id === adminSelectedMainId);
+                if (!mainCat) return;
+                const sub = mainCat.subCategories.find(s => s.id === adminSelectedSubId);
+                if (!sub) return;
                 const list = document.getElementById('adminArticleList');
-                if (category.articles.length === 0) {
+                if (sub.articles.length === 0) {
                     list.innerHTML = '<li style="color:#999; justify-content:center;">暂无文章</li>';
                 } else {
-                    list.innerHTML = category.articles.map(article => `
+                    list.innerHTML = sub.articles.map(article => `
                         <li>
                             <span style="flex:1; word-break:break-all;">${escapeHtml(article.title)}</span>
                             <button class="small-btn danger" data-delete-article="${article.id}">删除</button>
@@ -576,151 +720,96 @@
                     btn.addEventListener('click', function() {
                         const articleId = this.getAttribute('data-delete-article');
                         if (confirm('确定删除这篇文章吗？')) {
-                            const cat = appData.categories.find(c => c.id === selectedAdminCategoryId);
-                            if (cat) {
-                                cat.articles = cat.articles.filter(a => a.id !== articleId);
-                                saveData();
-                                renderAdminArticles();
-                                renderAdminCategories();
-                                renderCategories();
+                            const main = appData.mainCategories.find(m => m.id === adminSelectedMainId);
+                            if (main) {
+                                const subCat = main.subCategories.find(s => s.id === adminSelectedSubId);
+                                if (subCat) {
+                                    subCat.articles = subCat.articles.filter(a => a.id !== articleId);
+                                    saveData();
+                                    renderAdminArticles();
+                                    renderAdminSubCategories();
+                                    renderAdminMainCategories();
+                                    renderMainCategories();
+                                }
                             }
                         }
                     });
                 });
             }
 
-            function addCategory() {
-                const input = document.getElementById('newCategoryName');
+            // 添加一级分类
+            function addMainCategory() {
+                const input = document.getElementById('newMainCategoryName');
                 const name = input.value.trim();
-                if (!name) {
-                    alert('请输入分类名称');
-                    return;
-                }
-                appData.categories.push({
+                if (!name) { alert('请输入大分类名称'); return; }
+                appData.mainCategories.push({
                     id: generateId(),
                     name: name,
-                    articles: []
+                    subCategories: []
                 });
                 saveData();
                 input.value = '';
-                renderAdminCategories();
-                renderCategories();
+                renderAdminMainCategories();
+                renderMainCategories();
             }
 
-            // ========== 新增：自动获取标题功能 ==========
-            async function fetchTitle(url) {
-                // 使用两个备用的CORS代理，提高成功率
-                const proxies = [
-                    `https://corsproxy.io/?${encodeURIComponent(url)}`,
-                    `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`
-                ];
-                
-                for (let proxy of proxies) {
-                    try {
-                        const response = await fetch(proxy);
-                        if (!response.ok) continue;
-                        const html = await response.text();
-                        // 提取<title>标签内容
-                        const match = html.match(/<\s*title\s*>(.*?)<\s*\/\s*title\s*>/i);
-                        if (match && match[1]) {
-                            return match[1].trim();
-                        }
-                    } catch (e) {
-                        continue; // 尝试下一个代理
-                    }
-                }
-                return null; // 所有代理均失败
-            }
-
-            async function autoFetchTitle() {
-                const urlInput = document.getElementById('newArticleUrl');
-                const titleInput = document.getElementById('newArticleTitle');
-                const fetchBtn = document.getElementById('fetchTitleBtn');
-                const url = urlInput.value.trim();
-                
-                if (!url || (!url.startsWith('http://') && !url.startsWith('https://'))) {
-                    return;
-                }
-                
-                // 显示加载状态
-                fetchBtn.classList.add('loading');
-                fetchBtn.textContent = '⏳';
-                
-                try {
-                    const title = await fetchTitle(url);
-                    if (title) {
-                        titleInput.value = title;
-                        // 选中标题文字，方便用户直接修改
-                        titleInput.select();
-                    }
-                } catch (error) {
-                    // 静默失败
-                } finally {
-                    fetchBtn.classList.remove('loading');
-                    fetchBtn.textContent = '🔍';
+            // 添加二级分类
+            function addSubCategory() {
+                if (!adminSelectedMainId) { alert('请先选择一个大分类'); return; }
+                const input = document.getElementById('newSubCategoryName');
+                const name = input.value.trim();
+                if (!name) { alert('请输入子分类名称'); return; }
+                const main = appData.mainCategories.find(m => m.id === adminSelectedMainId);
+                if (main) {
+                    main.subCategories.push({
+                        id: generateId(),
+                        name: name,
+                        articles: []
+                    });
+                    saveData();
+                    input.value = '';
+                    renderAdminSubCategories();
+                    renderAdminMainCategories();
+                    renderMainCategories();
                 }
             }
 
-            function setupAutoFetch() {
-                const urlInput = document.getElementById('newArticleUrl');
-                const fetchBtn = document.getElementById('fetchTitleBtn');
-                
-                // 当链接框失去焦点时自动获取
-                urlInput.addEventListener('blur', () => {
-                    // 避免与手动点击按钮重复触发
-                    autoFetchTitle();
-                });
-                
-                // 手动点击按钮获取
-                fetchBtn.addEventListener('click', () => {
-                    autoFetchTitle();
-                });
-                
-                // 回车也能触发获取（可选）
-                urlInput.addEventListener('keypress', (e) => {
-                    if (e.key === 'Enter') {
-                        e.preventDefault();
-                        autoFetchTitle();
-                    }
-                });
-            }
-            // ========== 新增结束 ==========
-
+            // 添加文章
             function addArticle() {
-                if (!selectedAdminCategoryId) {
-                    alert('请先在分类列表中点击“管理文章”选择一个分类');
+                if (!adminSelectedMainId || !adminSelectedSubId) {
+                    alert('请先选择一个大分类和子分类');
                     return;
                 }
                 const titleInput = document.getElementById('newArticleTitle');
                 const urlInput = document.getElementById('newArticleUrl');
                 const title = titleInput.value.trim();
-                let url = urlInput.value.trim();
-                
-                if (!title || !url) {
-                    alert('请填写文章标题和链接');
-                    return;
-                }
+                const url = urlInput.value.trim();
+                if (!title || !url) { alert('请填写文章标题和链接'); return; }
                 if (!url.startsWith('http://') && !url.startsWith('https://')) {
                     alert('链接需要以 http:// 或 https:// 开头');
                     return;
                 }
-                
-                const category = appData.categories.find(c => c.id === selectedAdminCategoryId);
-                if (category) {
-                    category.articles.push({
-                        id: generateId(),
-                        title: title,
-                        url: url
-                    });
-                    saveData();
-                    titleInput.value = '';
-                    urlInput.value = '';
-                    renderAdminArticles();
-                    renderAdminCategories();
-                    renderCategories();
+                const main = appData.mainCategories.find(m => m.id === adminSelectedMainId);
+                if (main) {
+                    const sub = main.subCategories.find(s => s.id === adminSelectedSubId);
+                    if (sub) {
+                        sub.articles.push({
+                            id: generateId(),
+                            title: title,
+                            url: url
+                        });
+                        saveData();
+                        titleInput.value = '';
+                        urlInput.value = '';
+                        renderAdminArticles();
+                        renderAdminSubCategories();
+                        renderAdminMainCategories();
+                        renderMainCategories();
+                    }
                 }
             }
 
+            // 密码与面板控制
             function checkPassword() {
                 const pwd = document.getElementById('passwordInput').value;
                 if (pwd === ADMIN_PASSWORD) {
@@ -735,30 +824,34 @@
 
             function openAdminPanel() {
                 document.getElementById('adminPanel').classList.add('active');
-                renderAdminCategories();
-                backToCategorySelection();
-                // 初始化自动获取标题的事件
-                setupAutoFetch();
+                // 重置管理状态
+                adminSelectedMainId = null;
+                adminSelectedSubId = null;
+                document.getElementById('subCatSection').style.display = 'none';
+                document.getElementById('articleAdminSection').style.display = 'none';
+                renderAdminMainCategories();
             }
 
             function closeAdminPanel() {
                 document.getElementById('adminPanel').classList.remove('active');
-                renderCategories();
+                renderMainCategories();
             }
 
+            // 事件绑定
             function bindEvents() {
-                document.getElementById('backToCategories').addEventListener('click', backToCategories);
-                
-                document.getElementById('openAdminBtn').addEventListener('click', function() {
+                document.getElementById('backToMainCategories').addEventListener('click', backToMainCategories);
+                document.getElementById('backToSubCategories').addEventListener('click', backToSubCategories);
+
+                document.getElementById('openAdminBtn').addEventListener('click', () => {
                     document.getElementById('passwordModal').classList.add('active');
                     document.getElementById('passwordInput').focus();
                 });
-                
+
                 document.getElementById('confirmPassword').addEventListener('click', checkPassword);
-                document.getElementById('passwordInput').addEventListener('keypress', function(e) {
+                document.getElementById('passwordInput').addEventListener('keypress', e => {
                     if (e.key === 'Enter') checkPassword();
                 });
-                
+
                 document.getElementById('passwordModal').addEventListener('click', function(e) {
                     if (e.target === this) {
                         this.classList.remove('active');
@@ -766,19 +859,35 @@
                         document.getElementById('pwdError').style.display = 'none';
                     }
                 });
-                
+
                 document.getElementById('closeAdminBtn').addEventListener('click', closeAdminPanel);
-                
-                document.getElementById('addCategoryBtn').addEventListener('click', addCategory);
-                document.getElementById('newCategoryName').addEventListener('keypress', function(e) {
-                    if (e.key === 'Enter') addCategory();
+
+                document.getElementById('addMainCategoryBtn').addEventListener('click', addMainCategory);
+                document.getElementById('newMainCategoryName').addEventListener('keypress', e => {
+                    if (e.key === 'Enter') addMainCategory();
                 });
-                
+
+                document.getElementById('addSubCategoryBtn').addEventListener('click', addSubCategory);
+                document.getElementById('newSubCategoryName').addEventListener('keypress', e => {
+                    if (e.key === 'Enter') addSubCategory();
+                });
+
                 document.getElementById('addArticleBtn').addEventListener('click', addArticle);
-                
-                document.getElementById('backToCatList').addEventListener('click', backToCategorySelection);
-                
-                document.addEventListener('keydown', function(e) {
+                document.getElementById('newArticleUrl').addEventListener('keypress', e => {
+                    if (e.key === 'Enter') addArticle();
+                });
+
+                document.getElementById('backToMainCatList').addEventListener('click', () => {
+                    exitSubManager();
+                    renderAdminMainCategories();
+                });
+
+                document.getElementById('backToSubCatList').addEventListener('click', () => {
+                    exitArticleManager();
+                    renderAdminSubCategories();
+                });
+
+                document.addEventListener('keydown', e => {
                     if (e.key === 'Escape') {
                         if (document.getElementById('passwordModal').classList.contains('active')) {
                             document.getElementById('passwordModal').classList.remove('active');
@@ -791,7 +900,7 @@
 
             function init() {
                 loadData();
-                renderCategories();
+                renderMainCategories();
                 bindEvents();
             }
 
