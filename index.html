@@ -395,44 +395,10 @@
             const STORAGE_KEY = 'wx_article_index_data_v2';
 
             // 默认示例数据（两层分类）
-            const DEFAULT_DATA = {
-                mainCategories: [
-                    {
-                        id: 'mc1',
-                        name: '运营干货',
-                        subCategories: [
-                            {
-                                id: 'sc1',
-                                name: '排版技巧',
-                                articles: [
-                                    { id: 'a1', title: '新手公众号排版指南', url: 'https://mp.weixin.qq.com/s/example1' },
-                                    { id: 'a2', title: '配图选择全攻略', url: 'https://mp.weixin.qq.com/s/example2' }
-                                ]
-                            },
-                            {
-                                id: 'sc2',
-                                name: '涨粉方法',
-                                articles: [
-                                    { id: 'a3', title: '如何策划一场裂变活动', url: 'https://mp.weixin.qq.com/s/example3' }
-                                ]
-                            }
-                        ]
-                    },
-                    {
-                        id: 'mc2',
-                        name: '产品动态',
-                        subCategories: [
-                            {
-                                id: 'sc3',
-                                name: '版本更新',
-                                articles: [
-                                    { id: 'a4', title: 'v2.0 重磅发布', url: 'https://mp.weixin.qq.com/s/example4' }
-                                ]
-                            }
-                        ]
-                    }
-                ]
-            };
+            const jsonString= 
+                {"mainCategories":[{"id":"mogmsh1lyt86ez","name":"古代","subCategories":[{"id":"mogmw3f7ivchda","name":"古代朝堂","articles":[{"id":"mogmwous9qjpd7","title":"《微臣选谁谁才是皇上》by消失绿缇【中推】【嘻嘻，我不选你就算你也是重生的也没用】","url":"https://mp.weixin.qq.com/s/MBAACCuV734yDxb-dWHZJw"}]},{"id":"mogmy1k1siwq2k","name":"古代江湖","articles":[{"id":"mogmy9rr4xrkbn","title":"《饮鸩》by困倚危楼【一口气读完的武侠江湖小短篇，爽！】","url":"https://mp.weixin.qq.com/s/jfpo6jU_gPezEU6bUNBeXg"}]},{"id":"mogmypo3qg29bu","name":"古代种田","articles":[{"id":"mogmz4qrbjwi3c","title":"《重生养夫郎》by岛里天下【大推】【岛里天下你往文里加了啥！！！】","url":"https://mp.weixin.qq.com/s/Br3yYq9m3pFuQ-EYSP389w"}]}]},{"id":"mogmslo7phizax","name":"现代","subCategories":[{"id":"mogn0aavfiyzxn","name":"重生爽文","articles":[{"id":"mogn0khlj1p901","title":"《纨绔重生》by承越【中推】【重生黄金时代做时代弄潮儿的爽文~】","url":"https://mp.weixin.qq.com/s/CQE1eea6zGcAmb3qPtoqww"}]},{"id":"mogn0whneqpo0r","name":"游戏电竞","articles":[{"id":"mogn1au5f179c8","title":"《先想个办法越河》by落回【大推】【到底是谁发明的河总这么好玩的小玩意儿啊！！】","url":"https://mp.weixin.qq.com/s/RY3sGT0LOPCWVkYzmct9Ow"}]},{"id":"mogn1t5kwvsjyq","name":"娱乐圈文","articles":[{"id":"mogn238micperx","title":"《叶幸司，给我火》by烟猫与酒【中推】【还说什么！叶幸司你给我火！！！】","url":"https://mp.weixin.qq.com/s/fg3Y2hsMjlb5ouaBozNj5Q"}]},{"id":"mogn91j21qs4jp","name":"现代都市","articles":[{"id":"mogna0ktjstf73","title":"《死神的DDL》by Llosa【大推】【原来是你呀，原来是你！】","url":"https://mp.weixin.qq.com/s/UK8aeFV-9Zh9Ccnp54D0Bg"}]},{"id":"mogn972ktsq8gf","name":"校园青春","articles":[]}]},{"id":"mogmsvid66vmhp","name":"未来","subCategories":[{"id":"mogn47xbknnwfg","name":"ABO","articles":[{"id":"mogn4j1x2jzfod","title":"《本能狩猎》by六卷厕纸【所以爱是本能，是救赎，却独独不会是枷锁】","url":"https://mp.weixin.qq.com/s/9Qbe_J33eSHw9wmEOkcnNg"}]},{"id":"mognawc9qj9scm","name":"哨向/向哨","articles":[{"id":"mognbb77oatqge","title":"《哨兵重生后》by决绝【中推】【重生后我要拿回我的一切！！！】","url":"https://mp.weixin.qq.com/s/SlkzLe-S1AGdgKALMIg6UQ"}]}]},{"id":"mogmtkwtx5h7fp","name":"仙侠","subCategories":[]},{"id":"mogn3e5i1ylep0","name":"主攻","subCategories":[{"id":"mogn3j18lu901o","name":"主攻","articles":[{"id":"mogn55kdse5udn","title":"《重生养夫郎》by岛里天下【大推】【岛里天下你往文里加了啥！！！】","url":"https://mp.weixin.qq.com/s/Br3yYq9m3pFuQ-EYSP389w"},{"id":"mogn5v6xvnji5y","title":"《本能狩猎》by六卷厕纸【所以爱是本能，是救赎，却独独不会是枷锁】","url":"https://mp.weixin.qq.com/s/9Qbe_J33eSHw9wmEOkcnNg"},{"id":"mogn6bad5sa6ae","title":"《狩心游戏》by碉堡堡【大推】","url":"https://mp.weixin.qq.com/s/uME-uZXWe_DyGZRRwXf4SQ"},{"id":"mognbl7s9dbscg","title":"《哨兵重生后》by决绝【中推】【重生后我要拿回我的一切！！！】","url":"https://mp.weixin.qq.com/s/SlkzLe-S1AGdgKALMIg6UQ"}]}]},{"id":"mogn6y3pcq8y8u","name":"快穿","subCategories":[{"id":"mogn7iv6r29f8o","name":"单元快穿（每个单元主角不同）","articles":[{"id":"mogn7pnpzvbcj6","title":"《狩心游戏》by碉堡堡【大推】","url":"https://mp.weixin.qq.com/s/uME-uZXWe_DyGZRRwXf4SQ"}]},{"id":"mogn89n529dseb","name":"快穿（主角一个，攻切片）","articles":[]}]}]}
+            
+ const DEFAULT_DATA = JSON.parse(jsonString);
 
             let appData = { mainCategories: [] };
 
